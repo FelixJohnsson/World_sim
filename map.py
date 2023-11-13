@@ -35,6 +35,23 @@ def generate_map(height, width):
             for dy, dx in directions:
                 if random.random() < EXPAND_WATER_CHANCE:
                     form_lake(y + dy, x + dx, size)
+                    
+    def generate_nutrients_map():
+        nutrients_map = [[0 for _ in range(width)] for _ in range(height)]
+        for y in range(height):
+            for x in range(width):
+                if game_map[y][x] == G:
+                    nutrients_map[y][x] = random.random() * 0.5
+                    for i in range(-3, 5):
+                        for j in range(-3, 5):
+                            if 0 <= y + i < height and 0 <= x + j < width:
+                                if game_map[y + i][x + j] == W:
+                                    nutrients_map[y][x] += 0.1
+                elif game_map[y][x] == S:
+                    nutrients_map[y][x] = 0.1
+                elif game_map[y][x] == W:
+                    nutrients_map[y][x] = 0
+        return nutrients_map
 
     # Generate water
     for y in range(height):
@@ -49,4 +66,7 @@ def generate_map(height, width):
                 if random.random() < CHANCE_OF_SAND_NEAR_WATER:
                     game_map[y][x] = S
 
-    return game_map
+    return {
+        'map': game_map,
+        'nutrients_map': generate_nutrients_map()
+    }

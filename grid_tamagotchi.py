@@ -1,14 +1,19 @@
 from colorama import init as colorama_init
-from colorama import Fore
-from colorama import Style
+from colorama import Fore, Back, Style
 from map import generate_map
+from tree import Tree
+
 import time
 import cProfile
 import random
 
-colorama_init()
+colorama_init(autoreset=True)
 
-# CONSTANTS
+# CONTSTANTS
+GAME_LOOP_TIME = .1
+
+
+# SYMBOLS
 W = '≈'
 S = '/'
 G = '-'
@@ -23,7 +28,7 @@ TREE_SPECIES = [
     {
         "name": 'Teak',
         "growth_rate": 0.1,
-        "max_age": 50,
+        "max_age": 70,
         "stages": [
             ".",
             ":",
@@ -34,7 +39,7 @@ TREE_SPECIES = [
     {
         "name": 'Bak',
         "growth_rate": 0.2,
-        "max_age": 30,
+        "max_age": 55,
         "stages": [
             ".",
             ":",
@@ -45,7 +50,7 @@ TREE_SPECIES = [
     {
         "name": 'Pine',
         "growth_rate": 0.3,
-        "max_age": 20,
+        "max_age": 40,
         "stages": [
             ".",
             ":",
@@ -58,63 +63,48 @@ TREE_SPECIES = [
 # FOOD
 F = 'F'
 
-class Tree(object):
-    def __init__(self, x, y, species):
-        self.MAX_AGE = species['max_age']
-        self.GROWTH_RATE = species['growth_rate']
-        
-        self.x = x
-        self.y = y
-        self.species = species
-        self.growth_stage = 0
-        self.symbol = f'{species['name'][0].lower()}'
-        self.seeding_counter = 0
-        
-    def grow(self):
-        self.growth_stage += self.GROWTH_RATE
-        if self.growth_stage >= 10:
-            if self.symbol != self.species['name'][0].upper():
-                self.symbol = self.species['name'][0].upper()
-            self.seeding_counter += 1
-            
-    def is_dead(self):
-        return self.growth_stage > self.MAX_AGE
-        
 
-class Map (object):
+class World (object):
     # A grid map for the grid tamagotchi game.
     # Will be used as an environment for the RL agent.
     def __init__ (self):
         self.width = 120
         self.height = 30
-        self.map = generate_map(self.height, self.width) 
+        maps = generate_map(self.height, self.width)
+        self.map = maps['map']
+        self.nutrients_map = maps['nutrients_map']
         self.plants = []
 
-    def generate_new_map (self):
-        self.map = map
-    
     def print_map(self):
-        for row in self.map:
-            row_str = ''.join([self.get_tile_color(tile) + tile for tile in row])
+        for y, row in enumerate(self.map):
+            row_str = ''.join([self.get_tile_color(tile, x, y) + tile for x, tile in enumerate(row)])
             print(row_str + Style.RESET_ALL)
             
-    def get_tile_color(self, tile):
+    def get_tile_color(self, tile, x, y):
         if tile == W:
-            return Fore.BLUE
+            return Back.BLUE + Style.DIM + Fore.WHITE
         elif tile == S:
-            return Fore.YELLOW
+            return Back.YELLOW + Style.DIM + Fore.WHITE
         elif tile == G:
-            return Fore.GREEN
-        elif tile == F:
-            return Fore.RED
+            nutrient_level = self.nutrients_map[y][x]
+            color_intensity = int(255 * nutrient_level / 2)
+            return f'\x1b[48;2;{128-color_intensity//3};{255-color_intensity};{128-color_intensity//2}m'
+        elif tile == '.':
+            return Back.WHITE + Style.DIM + Fore.WHITE 
+        elif tile == ':':
+            return Back.WHITE + Style.DIM + Fore.WHITE
+        elif tile == 't':
+            return Back.WHITE + Style.NORMAL + Fore.GREEN
+        elif tile == 'T':
+            return Back.WHITE + Style.DIM + Fore.GREEN
         elif tile == CREATURE:
-            return Fore.MAGENTA
+            return Back.MAGENTA 
         elif tile == WALL:
-            return Fore.BLACK
+            return Back.BLACK + Style.DIM + Fore.WHITE
         elif tile == OUT_OF_BOUNDS:
-            return Fore.WHITE
+            return Back.WHITE + Style.DIM + Fore.BLACK
         else:
-            return Fore.WHITE
+            return Back.WHITE
     
     def get_map(self):
         return self.map
@@ -236,22 +226,23 @@ class Map (object):
 NUMBER_OF_TREES = 10
 
 def main():
-    new_map = Map() 
+    world = World() 
+    print(world)
     for _ in range(NUMBER_OF_TREES):
             successful = False
             while not successful:
-                x = random.randint(0, new_map.width - 1)
-                y = random.randint(0, new_map.height - 1)
+                x = random.randint(0, world.width - 1)
+                y = random.randint(0, world.height - 1)
                 species = random.choice(TREE_SPECIES)
-                successful = new_map.plant_tree(x, y, species)
+                successful = world.plant_tree(x, y, species)
                 if not successful:
                     continue
             
     while True:
-        new_map.grow_all_plants()
-        new_map.seed_new_trees()
-        new_map.print_map()
-        time.sleep(.1)
+        world.grow_all_plants()
+        world.seed_new_trees()
+        world.print_map()
+        time.sleep(GAME_LOOP_TIME)
         
 if __name__ == '__main__':
     cProfile.run('main()')
