@@ -9,15 +9,19 @@ class Tree(object):
         self.growth_stage = 0
         self.symbol = species['stages'][0]
         self.seeding_counter = 0
+        self.color = species['color'][0]
         
     def grow(self, nutrients_level):
         self.growth_stage += self.GROWTH_RATE * nutrients_level
         if self.growth_stage >= 10 and self.growth_stage < 20:
             self.symbol = self.species['stages'][1]
+            self.color = self.species['color'][1]
         elif self.growth_stage >= 20 and self.growth_stage < 30:
             self.symbol = self.species['stages'][2]
+            self.color = self.species['color'][2]
         elif self.growth_stage >= 30:
             self.symbol = self.species['stages'][3]
+            self.color = self.species['color'][3]
                 
         self.seeding_counter += 1
             

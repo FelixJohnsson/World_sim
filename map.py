@@ -28,6 +28,8 @@ class GROUND:
         self.nutrients = 0.5
         self.symbol = G
         self.color = (33, 192, 21)
+        self.plants = []
+        self.creatures = []
 
 # Configuration parameters
 WATER_CHANCE = 0.001  # Chance to start forming a lake
@@ -63,23 +65,7 @@ def generate_map(height, width):
         
                     
     def generate_nutrients_map():
-        nutrients_map = [[0 for _ in range(width)] for _ in range(height)]
-        for y in range(height):
-            for x in range(width):
-                tile = game_map[y][x]
-                if tile.type == 'ground':
-                    nutrients_map[y][x] = random.random() * 0.5
-                    for i in range(-3, 5):
-                        for j in range(-3, 5):
-                            if 0 <= y + i < height and 0 <= x + j < width:
-                                tile = game_map[y + i][x + j]
-                                if tile.type == 'water':
-                                    nutrients_map[y][x] += 0.1
-                elif tile.type == 'sand':
-                    nutrients_map[y][x] = 0.1
-                elif tile.type == 'water':
-                    nutrients_map[y][x] = 0
-        return nutrients_map
+        pass
 
     # Generate water
     for y in range(height):

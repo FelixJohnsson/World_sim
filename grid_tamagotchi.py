@@ -1,6 +1,6 @@
 from colorama import init as colorama_init
 from colorama import Fore, Back, Style
-from map import generate_map, W, S, G, WALL, OUT_OF_BOUNDS
+from map import generate_map, W, S, G, WALL, OUT_OF_BOUNDS, GROUND, WATER, SAND
 from tree import Tree
 from bush import Bush
 from creature import CREATURE, Creature
@@ -25,33 +25,12 @@ TREE_SPECIES = [
         "name": 'Teak',
         "growth_rate": 0.1,
         "max_age": 70,
+        "color": [(178, 255, 102), (178, 255, 102), (178, 255, 102), (178, 255, 102)],
         "stages": [
             ".",
             ":",
             "t",
             "T",
-        ]
-    },
-    {
-        "name": 'Aak',
-        "growth_rate": 0.2,
-        "max_age": 55,
-        "stages": [
-            ".",
-            ":",
-            "a",
-            "A",
-        ]
-    },
-    {
-        "name": 'Pine',
-        "growth_rate": 0.3,
-        "max_age": 40,
-        "stages": [
-            ".",
-            ":",
-            "p",
-            "P",
         ]
     },
 ]
@@ -82,7 +61,7 @@ class World (object):
         maps = generate_map(self.height, self.width)
         self.map = maps['map']
         self.nutrients_map = None
-        self.plants = []
+        self.all_plants = []
         
         self.creature = Creature(random.randrange(self.width), random.randrange(self.height))
         
@@ -90,9 +69,7 @@ class World (object):
         self.creature.move(self)
 
     def print_map(self):
-        for y, row in enumerate(self.map):
-            row_str = ''.join([self.get_tile_color(tile, x, y) + tile + Style.RESET_ALL for x, tile in enumerate(row)])
-            print(row_str + Style.RESET_ALL)
+        pass
             
     def get_tile_color(self, tile, x, y):
         if tile.type == 'water':
@@ -113,6 +90,12 @@ class World (object):
     
     def set_tile(self, x, y, tile):
         self.map[y][x] = tile
+    
+    def plant_at(self, x, y, plant):
+        # Should always be a ground tile
+        tile = self.get_tile(x, y)
+        tile.plants.append(plant)
+        self.all_plants.append(plant)
         
     def get_tile(self, x, y):
         return self.map[y][x]
@@ -130,10 +113,10 @@ class World (object):
         return tile != G and tile != W and tile != WALL and tile != OUT_OF_BOUNDS and tile != CREATURE
     
     def is_tile_sand(self, x, y):
-        return self.get_tile(x, y) == S
+        return self.get_tile(x, y).type == 'sand'
     
     def is_tile_ground(self, x, y):
-        return self.get_tile(x, y) == G
+        return self.get_tile(x, y).type == 'ground'
     
     def is_tile_occupied(self, x, y):
         if 0 <= x < self.width and 0 <= y < self.height:
@@ -167,22 +150,7 @@ class World (object):
             return observation
 
     def print_observation(self, x, y, vision_range):
-        observation = self.get_observation(x, y, vision_range)
-        for row in observation:
-            for tile in row:
-                if tile == W:
-                    print(Fore.BLUE + tile, end='')
-                elif tile == S:
-                    print(Fore.YELLOW + tile, end='')
-                elif tile == G:
-                    print(Fore.GREEN + tile, end='')
-                elif tile == F:
-                    print(Fore.RED + tile, end='')
-                elif tile == CREATURE:
-                    print(Fore.MAGENTA + tile, end='')
-                else:
-                    print(Fore.WHITE + tile, end='')
-            print(Style.RESET_ALL)
+        pass
 
     def find_all_tiles(self, tile_type):
         tiles = []
@@ -202,14 +170,16 @@ class World (object):
         return tiles
 
     def calculate_distance(self, x1, y1, x2, y2):
-        return abs(x2 - x1) + abs(y2 - y1)
+        return abs(x2 - x1) + abs(y2 - y1) 
+    
+    def within_map(self, x, y):
+        return 0 <= x < self.width and 0 <= y < self.height
     
     def plant_tree(self, x, y, species):
-        if 0 <= x < self.width and 0 <= y < self.height:
+        if self.within_map(x, y):
             new_tree = Tree(x, y, species)
             if self.is_tile_ground(x, y):
-                self.set_tile(x, y, new_tree.symbol)
-                self.plants.append(new_tree)
+                self.plant_at(x, y, new_tree)
                 return True
         
         return False
@@ -220,50 +190,26 @@ class World (object):
             y = random.randrange(self.height)
             species = random.choice(TREE_SPECIES)
             success = self.plant_tree(x, y, species)
-            if not success:
-                _ -= 1
-    
-    def plant_bush(self, x, y, species):
-        if 0 <= x < self.width and 0 <= y < self.height:
-            new_bush = Bush(x, y, species)
-            if self.is_tile_ground(x, y):
-                self.set_tile(x, y, new_bush.symbol)
-                self.plants.append(new_bush)
-                return True
-        
-        return False
-    
-    def plant_bushes(self, number_of_bushes):
-        for _ in range(number_of_bushes):
-            x = random.randrange(self.width)
-            y = random.randrange(self.height)
-            species = random.choice(BUSH_SPECIES)
-            success = self.plant_bush(x, y, species)
+
             if not success:
                 _ -= 1
     
     def grow_all_plants(self):
         tile_updates = {}
 
-        for plant in self.plants:
-            nutrients = self.get_tile_nutrients(plant.x, plant.y)
-            plant.grow(nutrients)
+        for plant in self.all_plants:
+            #nutrients = self.get_tile_nutrients(plant.x, plant.y)
+            plant.grow(1)
             if plant.is_dead():
-                tile_updates[(plant.x, plant.y)] = G
-            else:
-                if self.map[plant.y][plant.x] != plant.symbol:
-                    tile_updates[(plant.x, plant.y)] = plant.symbol
+                tile_updates[(plant.x, plant.y)] = GROUND()
 
-        for (x, y), symbol in tile_updates.items():
-            self.set_tile(x, y, symbol)
-
-        self.plants = [plant for plant in self.plants if not plant.is_dead()]
+        self.all_plants = [plant for plant in self.all_plants if not plant.is_dead()]
             
     def seed_new_trees(self):
             SEEDING_INTERVAL = 5
             SEEDING_CHANCE = 0.1
 
-            for plant in self.plants:
+            for plant in self.all_plants:
                 if plant.growth_stage >= 10 and plant.seeding_counter >= SEEDING_INTERVAL:
                     plant.seeding_counter = 0
                     for adj_x, adj_y in self.get_adjacent_tiles(plant.x, plant.y):
@@ -274,7 +220,13 @@ class World (object):
         for y, row in enumerate(map_data):
             for x, tile in enumerate(row):
                 color = self.get_tile_color(tile, x, y)
-                pygame.draw.rect(win, color, (x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE))
+                if tile.type == 'ground' and len(tile.plants) > 0:
+                    color = tile.plants[0].color
+                    pygame.draw.rect(win, color, (x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE))
+                    circle_center = (x * TILE_SIZE + TILE_SIZE // 2, y * TILE_SIZE + TILE_SIZE // 2)
+                    pygame.draw.circle(win, (249, 15, 15), circle_center, TILE_SIZE // 4)
+                else:
+                    pygame.draw.rect(win, color, (x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE))
 
 # GAME LOOP
 GAME_LOOP_TIME = .1
@@ -282,8 +234,8 @@ GAME_LOOP_TIME = .1
 NUMBER_OF_TREES = 15
 NUMBER_OF_BUSHES = 15
 
-WORLD_WIDTH = 800
-WORLD_HEIGHT = 800
+WORLD_WIDTH = 100
+WORLD_HEIGHT = 100
 
 PYGAME_ENABLED = True
 PYGAME_WIDTH = 800
@@ -292,9 +244,7 @@ PYGAME_HEIGHT = 800
 def main():
     world = World(WORLD_HEIGHT, WORLD_WIDTH) 
     world.plant_trees(NUMBER_OF_TREES)
-    world.plant_bushes(NUMBER_OF_BUSHES)
-            
-    #world.grow_all_plants()
+    #world.plant_bushes(NUMBER_OF_BUSHES)
     #world.seed_new_trees()
     #world.update_creature()
     if PYGAME_ENABLED:
@@ -303,20 +253,19 @@ def main():
         win = pygame.display.set_mode((PYGAME_WIDTH, PYGAME_HEIGHT))
         pygame.display.set_caption("Map Display")
         TILE_SIZE = PYGAME_WIDTH // WORLD_WIDTH
-        world.draw_pygame_map(world.map, win, TILE_SIZE)
     
         # Dont close the window immediately
         running = True
         while running:
             pygame.time.delay(100)
+            world.grow_all_plants()
+            world.draw_pygame_map(world.map, win, TILE_SIZE)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
             pygame.display.update()
     else:
         world.print_map()
-
-    #time.sleep(GAME_LOOP_TIME)
         
 if __name__ == '__main__':
     main()
