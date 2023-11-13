@@ -8,7 +8,7 @@ WALL = 'W'
 OUT_OF_BOUNDS = 'x'
 
 # Configuration parameters
-WATER_CHANCE = 0.005  # Chance to start forming a lake
+WATER_CHANCE = 0.001  # Chance to start forming a lake
 CHANCE_OF_SAND_NEAR_WATER = 0.5  # Chance to turn a ground tile into sand if it's adjacent to water
 EXPAND_WATER_CHANCE = 0.5  # Chance for water to expand and form a lake
 MAX_LAKE_SIZE = 25  # Maximum number of tiles a lake can have

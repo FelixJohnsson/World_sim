@@ -3,16 +3,13 @@ from colorama import Fore, Back, Style
 from map import generate_map, W, S, G, WALL, OUT_OF_BOUNDS
 from tree import Tree
 from bush import Bush
+from creature import CREATURE, Creature
 
 import time
 import cProfile
 import random
 
 colorama_init(autoreset=True)
-
-
-# CREATURES
-CREATURE = '0'
 
 # PLANTS, TREES
 TREE_SPECIES = [
@@ -79,6 +76,11 @@ class World (object):
         self.map = maps['map']
         self.nutrients_map = maps['nutrients_map']
         self.plants = []
+        
+        self.creature = Creature(random.randrange(self.width), random.randrange(self.height))
+        
+    def update_creature(self):
+        self.creature.move(self)
 
     def print_map(self):
         for y, row in enumerate(self.map):
@@ -127,6 +129,10 @@ class World (object):
 
     def is_tile_water(self, x, y):
         return self.get_tile(x, y) == W
+
+    def is_tile_edible(self, x, y):
+        tile = self.get_tile(x, y)
+        return tile != G and tile != W and tile != WALL and tile != OUT_OF_BOUNDS and tile != CREATURE
     
     def is_tile_sand(self, x, y):
         return self.get_tile(x, y) == S
@@ -140,6 +146,15 @@ class World (object):
                 return False
             else: 
                 return True
+            
+    def can_move_to(self, x, y):
+        if 0 <= x < self.width and 0 <= y < self.height:
+            if self.is_tile_ground(x, y) or self.is_tile_sand(x, y):
+                return True
+            elif self.is_tile_edible(x, y):
+                return True
+            else:
+                return False
             
     def get_tile_nutrients(self, x, y):
         return self.nutrients_map[y][x]
@@ -266,8 +281,8 @@ GAME_LOOP_TIME = .1
 NUMBER_OF_TREES = 15
 NUMBER_OF_BUSHES = 15
 
-WORLD_WIDTH = 100
-WORLD_HEIGHT = 25
+WORLD_WIDTH = 20
+WORLD_HEIGHT = 20
 
 def main():
     world = World(WORLD_HEIGHT, WORLD_WIDTH) 
@@ -278,6 +293,7 @@ def main():
     while True:
         world.grow_all_plants()
         world.seed_new_trees()
+        world.update_creature()
         world.print_map()
         time.sleep(GAME_LOOP_TIME)
         
