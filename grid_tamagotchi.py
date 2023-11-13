@@ -1,7 +1,8 @@
 from colorama import init as colorama_init
 from colorama import Fore, Back, Style
-from map import generate_map
+from map import generate_map, W, S, G, WALL, OUT_OF_BOUNDS
 from tree import Tree
+from bush import Bush
 
 import time
 import cProfile
@@ -9,16 +10,6 @@ import random
 
 colorama_init(autoreset=True)
 
-# CONTSTANTS
-GAME_LOOP_TIME = .1
-
-
-# SYMBOLS
-W = '≈'
-S = '/'
-G = '-'
-WALL = 'W'
-OUT_OF_BOUNDS = 'x'
 
 # CREATURES
 CREATURE = '0'
@@ -37,14 +28,14 @@ TREE_SPECIES = [
         ]
     },
     {
-        "name": 'Bak',
+        "name": 'Aak',
         "growth_rate": 0.2,
         "max_age": 55,
         "stages": [
             ".",
             ":",
-            "b",
-            "B",
+            "a",
+            "A",
         ]
     },
     {
@@ -60,6 +51,20 @@ TREE_SPECIES = [
     },
 ]
 
+BUSH_SPECIES = [
+    {
+        "name": 'Berry Bush',
+        "growth_rate": 0.1,
+        "max_age": 70,
+        "stages": [
+            "-",
+            "=",
+            "b",
+            "B",
+        ]
+    },
+]
+
 # FOOD
 F = 'F'
 
@@ -67,9 +72,9 @@ F = 'F'
 class World (object):
     # A grid map for the grid tamagotchi game.
     # Will be used as an environment for the RL agent.
-    def __init__ (self):
-        self.width = 120
-        self.height = 30
+    def __init__ (self, height, width):
+        self.width = width
+        self.height = height
         maps = generate_map(self.height, self.width)
         self.map = maps['map']
         self.nutrients_map = maps['nutrients_map']
@@ -77,7 +82,7 @@ class World (object):
 
     def print_map(self):
         for y, row in enumerate(self.map):
-            row_str = ''.join([self.get_tile_color(tile, x, y) + tile for x, tile in enumerate(row)])
+            row_str = ''.join([self.get_tile_color(tile, x, y) + tile + Style.RESET_ALL for x, tile in enumerate(row)])
             print(row_str + Style.RESET_ALL)
             
     def get_tile_color(self, tile, x, y):
@@ -87,16 +92,16 @@ class World (object):
             return Back.YELLOW + Style.DIM + Fore.WHITE
         elif tile == G:
             nutrient_level = self.nutrients_map[y][x]
-            color_intensity = int(255 * nutrient_level / 2)
-            return f'\x1b[48;2;{128-color_intensity//3};{255-color_intensity};{128-color_intensity//2}m'
+            color_intensity = int(255 * nutrient_level / 1)
+            return f'\x1b[48;2;{128-color_intensity//2};{255-color_intensity};{128-color_intensity//2}m'
         elif tile == '.':
-            return Back.WHITE + Style.DIM + Fore.WHITE 
+            return Back.RED + Style.DIM + Fore.WHITE 
         elif tile == ':':
-            return Back.WHITE + Style.DIM + Fore.WHITE
+            return Back.RED + Style.DIM + Fore.WHITE
         elif tile == 't':
-            return Back.WHITE + Style.NORMAL + Fore.GREEN
-        elif tile == 'T':
-            return Back.WHITE + Style.DIM + Fore.GREEN
+            return Back.RED + Style.NORMAL + Fore.WHITE
+        elif tile == 'T' or tile == 'b' or tile == 'B' or tile == 'p' or tile == 'P':
+            return Back.RED + Style.NORMAL + Fore.WHITE
         elif tile == CREATURE:
             return Back.MAGENTA 
         elif tile == WALL:
@@ -135,6 +140,9 @@ class World (object):
                 return False
             else: 
                 return True
+            
+    def get_tile_nutrients(self, x, y):
+        return self.nutrients_map[y][x]
 
     def get_observation(self, x, y, vision_range):
             observation = []
@@ -196,11 +204,40 @@ class World (object):
         
         return False
     
+    def plant_trees(self, number_of_trees):
+        for _ in range(number_of_trees):
+            x = random.randrange(self.width)
+            y = random.randrange(self.height)
+            species = random.choice(TREE_SPECIES)
+            success = self.plant_tree(x, y, species)
+            if not success:
+                _ -= 1
+    
+    def plant_bush(self, x, y, species):
+        if 0 <= x < self.width and 0 <= y < self.height:
+            new_bush = Bush(x, y, species)
+            if self.is_tile_ground(x, y):
+                self.set_tile(x, y, new_bush.symbol)
+                self.plants.append(new_bush)
+                return True
+        
+        return False
+    
+    def plant_bushes(self, number_of_bushes):
+        for _ in range(number_of_bushes):
+            x = random.randrange(self.width)
+            y = random.randrange(self.height)
+            species = random.choice(BUSH_SPECIES)
+            success = self.plant_bush(x, y, species)
+            if not success:
+                _ -= 1
+    
     def grow_all_plants(self):
         tile_updates = {}
 
         for plant in self.plants:
-            plant.grow()
+            nutrients = self.get_tile_nutrients(plant.x, plant.y)
+            plant.grow(nutrients)
             if plant.is_dead():
                 tile_updates[(plant.x, plant.y)] = G
             else:
@@ -222,21 +259,21 @@ class World (object):
                     for adj_x, adj_y in self.get_adjacent_tiles(plant.x, plant.y):
                         if not self.is_tile_occupied(adj_x, adj_y) and random.random() < SEEDING_CHANCE:
                             self.plant_tree(adj_x, adj_y, plant.species)
+                            
+# GAME LOOP
+GAME_LOOP_TIME = .1
 
-NUMBER_OF_TREES = 10
+NUMBER_OF_TREES = 15
+NUMBER_OF_BUSHES = 15
+
+WORLD_WIDTH = 100
+WORLD_HEIGHT = 25
 
 def main():
-    world = World() 
+    world = World(WORLD_HEIGHT, WORLD_WIDTH) 
     print(world)
-    for _ in range(NUMBER_OF_TREES):
-            successful = False
-            while not successful:
-                x = random.randint(0, world.width - 1)
-                y = random.randint(0, world.height - 1)
-                species = random.choice(TREE_SPECIES)
-                successful = world.plant_tree(x, y, species)
-                if not successful:
-                    continue
+    world.plant_trees(NUMBER_OF_TREES)
+    world.plant_bushes(NUMBER_OF_BUSHES)
             
     while True:
         world.grow_all_plants()

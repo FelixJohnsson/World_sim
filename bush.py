@@ -1,4 +1,4 @@
-class Tree(object):
+class Bush(object):
     def __init__(self, x, y, species):
         self.MAX_AGE = species['max_age']
         self.GROWTH_RATE = species['growth_rate']

@@ -1,9 +1,11 @@
 import random
 
-# Constants
-W = '≈'  # Water
-S = '/'  # Sand
-G = '-'  # Ground
+# SYMBOLS
+W = '≈'
+S = '/'
+G = '_'
+WALL = 'W'
+OUT_OF_BOUNDS = 'x'
 
 # Configuration parameters
 WATER_CHANCE = 0.005  # Chance to start forming a lake
