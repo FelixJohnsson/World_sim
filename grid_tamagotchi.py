@@ -4,12 +4,20 @@ from map import generate_map, W, S, G, WALL, OUT_OF_BOUNDS
 from tree import Tree
 from bush import Bush
 from creature import CREATURE, Creature
+import pygame
 
 import time
 import cProfile
 import random
 
 colorama_init(autoreset=True)
+
+OCEAN_BLUE = (21, 84, 192)
+DESERT_YELLOW = (233, 216, 63)
+FOREST_GREEN = (33, 192, 21)
+CREATURE_RED = (249, 15, 15)
+WALL_WHITE = (255, 255, 255)
+OUT_OF_BOUNDS_BLACK = (0, 0, 0)
 
 # PLANTS, TREES
 TREE_SPECIES = [
@@ -65,7 +73,6 @@ BUSH_SPECIES = [
 # FOOD
 F = 'F'
 
-
 class World (object):
     # A grid map for the grid tamagotchi game.
     # Will be used as an environment for the RL agent.
@@ -74,7 +81,7 @@ class World (object):
         self.height = height
         maps = generate_map(self.height, self.width)
         self.map = maps['map']
-        self.nutrients_map = maps['nutrients_map']
+        self.nutrients_map = None
         self.plants = []
         
         self.creature = Creature(random.randrange(self.width), random.randrange(self.height))
@@ -88,30 +95,18 @@ class World (object):
             print(row_str + Style.RESET_ALL)
             
     def get_tile_color(self, tile, x, y):
-        if tile == W:
-            return Back.BLUE + Style.DIM + Fore.WHITE
-        elif tile == S:
-            return Back.YELLOW + Style.DIM + Fore.WHITE
-        elif tile == G:
-            nutrient_level = self.nutrients_map[y][x]
-            color_intensity = int(255 * nutrient_level / 1)
-            return f'\x1b[48;2;{128-color_intensity//2};{255-color_intensity};{128-color_intensity//2}m'
-        elif tile == '.':
-            return Back.RED + Style.DIM + Fore.WHITE 
-        elif tile == ':':
-            return Back.RED + Style.DIM + Fore.WHITE
-        elif tile == 't':
-            return Back.RED + Style.NORMAL + Fore.WHITE
-        elif tile == 'T' or tile == 'b' or tile == 'B' or tile == 'p' or tile == 'P':
-            return Back.RED + Style.NORMAL + Fore.WHITE
-        elif tile == CREATURE:
-            return Back.MAGENTA 
-        elif tile == WALL:
-            return Back.BLACK + Style.DIM + Fore.WHITE
-        elif tile == OUT_OF_BOUNDS:
-            return Back.WHITE + Style.DIM + Fore.BLACK
-        else:
-            return Back.WHITE
+        if tile.type == 'water':
+            return OCEAN_BLUE
+        elif tile.type == 'sand':
+            return DESERT_YELLOW
+        elif tile.type == 'ground':
+            return FOREST_GREEN
+        elif tile.type == 'creature':
+            return CREATURE_RED
+        elif tile.type == 'wall':
+            return WALL_WHITE
+        elif tile.type == 'out_of_bounds':
+            return OUT_OF_BOUNDS_BLACK
     
     def get_map(self):
         return self.map
@@ -274,28 +269,55 @@ class World (object):
                     for adj_x, adj_y in self.get_adjacent_tiles(plant.x, plant.y):
                         if not self.is_tile_occupied(adj_x, adj_y) and random.random() < SEEDING_CHANCE:
                             self.plant_tree(adj_x, adj_y, plant.species)
-                            
+
+    def draw_pygame_map(self, map_data, win, TILE_SIZE):
+        for y, row in enumerate(map_data):
+            for x, tile in enumerate(row):
+                color = self.get_tile_color(tile, x, y)
+                pygame.draw.rect(win, color, (x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE))
+
 # GAME LOOP
 GAME_LOOP_TIME = .1
 
 NUMBER_OF_TREES = 15
 NUMBER_OF_BUSHES = 15
 
-WORLD_WIDTH = 20
-WORLD_HEIGHT = 20
+WORLD_WIDTH = 800
+WORLD_HEIGHT = 800
+
+PYGAME_ENABLED = True
+PYGAME_WIDTH = 800
+PYGAME_HEIGHT = 800
 
 def main():
     world = World(WORLD_HEIGHT, WORLD_WIDTH) 
-    print(world)
     world.plant_trees(NUMBER_OF_TREES)
     world.plant_bushes(NUMBER_OF_BUSHES)
             
-    while True:
-        world.grow_all_plants()
-        world.seed_new_trees()
-        world.update_creature()
+    #world.grow_all_plants()
+    #world.seed_new_trees()
+    #world.update_creature()
+    if PYGAME_ENABLED:
+        # Initialize Pygame
+        pygame.init()
+        win = pygame.display.set_mode((PYGAME_WIDTH, PYGAME_HEIGHT))
+        pygame.display.set_caption("Map Display")
+        TILE_SIZE = PYGAME_WIDTH // WORLD_WIDTH
+        world.draw_pygame_map(world.map, win, TILE_SIZE)
+    
+        # Dont close the window immediately
+        running = True
+        while running:
+            pygame.time.delay(100)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+            pygame.display.update()
+    else:
         world.print_map()
-        time.sleep(GAME_LOOP_TIME)
+
+    #time.sleep(GAME_LOOP_TIME)
         
 if __name__ == '__main__':
+    main()
     cProfile.run('main()')
