@@ -5,8 +5,6 @@ from tree import Tree
 from bush import Bush
 from creature import CREATURE, Creature
 import pygame
-
-import time
 import cProfile
 import random
 
@@ -40,6 +38,7 @@ BUSH_SPECIES = [
         "name": 'Berry Bush',
         "growth_rate": 0.1,
         "max_age": 70,
+        "color": [(150, 200, 90), (150, 200, 90), (150, 200, 90), (150, 200, 90)],
         "stages": [
             "-",
             "=",
@@ -49,17 +48,13 @@ BUSH_SPECIES = [
     },
 ]
 
-# FOOD
-F = 'F'
-
 class World (object):
     # A grid map for the grid tamagotchi game.
     # Will be used as an environment for the RL agent.
     def __init__ (self, height, width):
         self.width = width
         self.height = height
-        maps = generate_map(self.height, self.width)
-        self.map = maps['map']
+        self.map = generate_map(self.height, self.width)
         self.nutrients_map = None
         self.all_plants = []
         
@@ -185,14 +180,33 @@ class World (object):
         return False
     
     def plant_trees(self, number_of_trees):
-        for _ in range(number_of_trees):
+        for index in range(number_of_trees):
             x = random.randrange(self.width)
             y = random.randrange(self.height)
             species = random.choice(TREE_SPECIES)
             success = self.plant_tree(x, y, species)
 
             if not success:
-                _ -= 1
+               index -= 1
+    
+    def plant_bush(self, x, y, species):
+        if self.within_map(x, y):
+            new_bush = Bush(x, y, species)
+            if self.is_tile_ground(x, y):
+                self.plant_at(x, y, new_bush)
+                return True
+        
+        return False
+    
+    def plant_bushes(self, number_of_bushes):
+        for index in range(number_of_bushes):
+            x = random.randrange(self.width)
+            y = random.randrange(self.height)
+            species = random.choice(BUSH_SPECIES)
+            success = self.plant_bush(x, y, species)
+
+            if not success:
+               index -= 1
     
     def grow_all_plants(self):
         tile_updates = {}
@@ -237,35 +251,30 @@ NUMBER_OF_BUSHES = 15
 WORLD_WIDTH = 100
 WORLD_HEIGHT = 100
 
-PYGAME_ENABLED = True
 PYGAME_WIDTH = 800
 PYGAME_HEIGHT = 800
 
 def main():
-    world = World(WORLD_HEIGHT, WORLD_WIDTH) 
+    world = World(WORLD_HEIGHT, WORLD_WIDTH)
     world.plant_trees(NUMBER_OF_TREES)
-    #world.plant_bushes(NUMBER_OF_BUSHES)
-    #world.seed_new_trees()
+    world.plant_bushes(NUMBER_OF_BUSHES)
     #world.update_creature()
-    if PYGAME_ENABLED:
-        # Initialize Pygame
-        pygame.init()
-        win = pygame.display.set_mode((PYGAME_WIDTH, PYGAME_HEIGHT))
-        pygame.display.set_caption("Map Display")
-        TILE_SIZE = PYGAME_WIDTH // WORLD_WIDTH
-    
-        # Dont close the window immediately
-        running = True
-        while running:
-            pygame.time.delay(100)
-            world.grow_all_plants()
-            world.draw_pygame_map(world.map, win, TILE_SIZE)
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
-            pygame.display.update()
-    else:
-        world.print_map()
+    pygame.init()
+    win = pygame.display.set_mode((PYGAME_WIDTH, PYGAME_HEIGHT))
+    pygame.display.set_caption("Map Display")
+    TILE_SIZE = PYGAME_WIDTH // WORLD_WIDTH
+    running = True
+    while running:
+        pygame.time.delay(100)
+        world.grow_all_plants()
+        world.seed_new_trees()
+        
+        world.draw_pygame_map(world.map, win, TILE_SIZE)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+        pygame.display.update()
+
         
 if __name__ == '__main__':
     main()

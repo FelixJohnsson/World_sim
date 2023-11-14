@@ -18,24 +18,24 @@ class WATER:
 class SAND:
     def __init__(self):
         self.type = 'sand'
-        self.nutrients = 0.1
+        self.nutrients = round(random.uniform(0, 1) * 0.1, 3)
         self.symbol = S
         self.color = (233, 216, 63)
 
 class GROUND:
     def __init__(self):
         self.type = 'ground'
-        self.nutrients = 0.5
+        self.nutrients = round(random.uniform(0, 1) * 0.5, 3)
         self.symbol = G
         self.color = (33, 192, 21)
         self.plants = []
         self.creatures = []
 
 # Configuration parameters
-WATER_CHANCE = 0.001  # Chance to start forming a lake
-CHANCE_OF_SAND_NEAR_WATER = 0.3  # Chance to turn a ground tile into sand if it's adjacent to water
-EXPAND_WATER_CHANCE = 0.47  # Chance for water to expand and form a lake
-MAX_LAKE_SIZE = 300  # Maximum number of tiles a lake can have
+WATER_CHANCE = 0.001 
+CHANCE_OF_SAND_NEAR_WATER = 0.3
+EXPAND_WATER_CHANCE = 0.47
+MAX_LAKE_SIZE = 300 
 
 def generate_map(height, width):
     game_map = [[GROUND() for _ in range(width)] for _ in range(height)]
@@ -64,8 +64,17 @@ def generate_map(height, width):
                         form_lake(y + dy, x + dx, size)
         
                     
-    def generate_nutrients_map():
-        pass
+    def generate_nutrients_for_tiles():
+        # Loop through all tiles and generate nutrients
+        # Ground that is near water gets more nutrients
+        for y in range(height):
+            for x in range(width):
+                tile = game_map[y][x]
+                if tile.type == 'ground':
+                    water_count = count_water_adjacent(y, x)
+                    tile.nutrients = water_count * 0.1 + 0.5
+                elif tile.type == 'sand':
+                    tile.nutrients = 0.1
 
     # Generate water
     for y in range(height):
@@ -80,7 +89,7 @@ def generate_map(height, width):
             if tile.type == 'ground' and count_water_adjacent(y, x) > 0:
                 if random.random() < CHANCE_OF_SAND_NEAR_WATER:
                     game_map[y][x] = SAND()
+                    
+    generate_nutrients_for_tiles()
 
-    return {
-        'map': game_map,
-    }
+    return game_map
