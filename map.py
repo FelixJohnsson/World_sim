@@ -18,14 +18,14 @@ class WATER:
 class SAND:
     def __init__(self):
         self.type = 'sand'
-        self.nutrients = round(random.uniform(0, 1) * 0.1, 3)
+        self.nutrients = round(random.uniform(0, 2) * 0.1, 3)
         self.symbol = S
         self.color = (233, 216, 63)
 
 class GROUND:
     def __init__(self):
         self.type = 'ground'
-        self.nutrients = round(random.uniform(0, 1) * 0.5, 3)
+        self.nutrients = round(random.uniform(0, 1), 3)
         self.symbol = G
         self.color = (33, 192, 21)
         self.plants = []
@@ -72,7 +72,7 @@ def generate_map(height, width):
                 tile = game_map[y][x]
                 if tile.type == 'ground':
                     water_count = count_water_adjacent(y, x)
-                    tile.nutrients = water_count * 0.1 + 0.5
+                    tile.nutrients += water_count * 0.5
                 elif tile.type == 'sand':
                     tile.nutrients = 0.1
 

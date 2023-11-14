@@ -13,6 +13,7 @@ colorama_init(autoreset=True)
 OCEAN_BLUE = (21, 84, 192)
 DESERT_YELLOW = (233, 216, 63)
 FOREST_GREEN = (33, 192, 21)
+SOIL_BROWN = (102, 51, 0)
 CREATURE_RED = (249, 15, 15)
 WALL_WHITE = (255, 255, 255)
 OUT_OF_BOUNDS_BLACK = (0, 0, 0)
@@ -165,7 +166,7 @@ class World (object):
         return tiles
 
     def calculate_distance(self, x1, y1, x2, y2):
-        return abs(x2 - x1) + abs(y2 - y1) 
+        return abs(x2 - x1) + abs(y2 - y1)
     
     def within_map(self, x, y):
         return 0 <= x < self.width and 0 <= y < self.height
@@ -234,13 +235,26 @@ class World (object):
         for y, row in enumerate(map_data):
             for x, tile in enumerate(row):
                 color = self.get_tile_color(tile, x, y)
-                if tile.type == 'ground' and len(tile.plants) > 0:
-                    color = tile.plants[0].color
-                    pygame.draw.rect(win, color, (x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE))
-                    circle_center = (x * TILE_SIZE + TILE_SIZE // 2, y * TILE_SIZE + TILE_SIZE // 2)
-                    pygame.draw.circle(win, (249, 15, 15), circle_center, TILE_SIZE // 4)
+                if tile.type == 'ground':
+                    nutrient_level = tile.nutrients
+                    # Blend the color based on nutrient level
+                    nutrient_ratio = nutrient_level / 3
+                    print(nutrient_ratio, nutrient_level)
+                    blended_color = (
+                        int(SOIL_BROWN[0] * nutrient_ratio + FOREST_GREEN[0] * (1 - nutrient_ratio)),
+                        int(SOIL_BROWN[1] * nutrient_ratio + FOREST_GREEN[1] * (1 - nutrient_ratio)),
+                        int(SOIL_BROWN[2] * nutrient_ratio + FOREST_GREEN[2] * (1 - nutrient_ratio))
+                    )
+                    print(blended_color)
+                    pygame.draw.rect(win, blended_color, (x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
+                    
+                    if len(tile.plants) > 0:
+                        plant_color = tile.plants[0].color
+                        circle_center = (x * TILE_SIZE + TILE_SIZE // 2, y * TILE_SIZE + TILE_SIZE // 2)
+                        pygame.draw.circle(win, plant_color, circle_center, TILE_SIZE // 4)
                 else:
                     pygame.draw.rect(win, color, (x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE))
+
 
 # GAME LOOP
 GAME_LOOP_TIME = .1
