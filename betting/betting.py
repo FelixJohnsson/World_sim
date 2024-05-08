@@ -4,47 +4,47 @@ import numpy as np
 # Consolidated data
 data = {
     'April 30th': {
-        'Grauby': {'Roulette 1': 100},
-        'Felix': {'Roulette 1': 100}
+        'Grauby': {'R. 1': 100},
+        'Felix': {'R. 1': 100}
     },
     'May 1st': {
-        'Grauby': {'Roulette 2': -200},
-        'Felix': {'Roulette 2': -100}
+        'Grauby': {'R. 2': -200},
+        'Felix': {'R. 2': -100}
     },
     'May 2nd': {
-        'Grauby': {'Roulette 3': 363},
-        'Felix': {'Roulette 3': 164}
+        'Grauby': {'R. 3': 363},
+        'Felix': {'R. 3': 164}
     },
     'May 3rd': {
         'Grauby': {
-            'Roulette 4': -100,
-            'Roulette 5': -100,
-            'Roulette 6': -200,
-            'Roulette 7': -100,
-            'Blackjack 8': 450,
+            'R. 4': -100,
+            'R. 5': -100,
+            'R. 6': -200,
+            'R. 7': -100,
+            'BJ 8': 450,
             'Spin 9': 0
         },
         'Felix': {
-            'Roulette 4': -100,
-            'Roulette 5': -100,
-            'Roulette 6': -200,
-            'Roulette 7': -100,
-            'Blackjack 8': 450,
+            'R. 4': -100,
+            'R. 5': -100,
+            'R. 6': -200,
+            'R. 7': -100,
+            'BJ 8': 450,
             'Spin 9': 0
         }
     },
     'May 7th': {
         'Grauby': {
-            'Blackjack 10': -100,
-            'Blackjack 11': -150,
-            'Blackjack 12': -50,
-            'Blackjack 13': -100
+            'BJ 10': -100,
+            'BJ 11': -150,
+            'BJ 12': -50,
+            'BJ 13': -100
         },
         'Felix': {
-            'Blackjack 10': 0,
-            'Blackjack 11': -150,
-            'Blackjack 12': -50,
-            'Blackjack 13': 0
+            'BJ 10': 0,
+            'BJ 11': -150,
+            'BJ 12': -50,
+            'BJ 13': 0
         }
     }
 }
@@ -83,8 +83,8 @@ rects2 = ax.bar(x + 0.2, grauby_values, width=0.4, label='Grauby', color=['green
 
 # Add a line graph for cumulative totals
 ax2 = ax.twinx()
-ax2.plot(x - 0.2, felix_cumsum, label='Felix Total', marker='o', color='blue', linewidth=2, markersize=8)
-ax2.plot(x + 0.2, grauby_cumsum, label='Grauby Total', marker='o', color='purple', linewidth=2, markersize=8)
+ax2.plot(x - 0.2, felix_cumsum, label='Felix Total', marker='o', color='yellow', linewidth=2, markersize=8)
+ax2.plot(x + 0.2, grauby_cumsum, label='Grauby Total', marker='o', color='pink', linewidth=2, markersize=8)
 
 # Set labels and titles
 ax.set_xlabel('Games')
@@ -112,8 +112,13 @@ autolabel(rects1)
 autolabel(rects2)
 
 # Displaying statistical information
-ax.annotate(f'Avg: {felix_mean:.2f}, Vol: {felix_volatility:.2f}', xy=(0, 1), xycoords='axes fraction', xytext=(5, -5), textcoords='offset points', ha='left', va='top', color='blue', fontsize=10)
-ax.annotate(f'Avg: {grauby_mean:.2f}, Vol: {grauby_volatility:.2f}', xy=(1, 1), xycoords='axes fraction', xytext=(-5, -5), textcoords='offset points', ha='right', va='top', color='purple', fontsize=10)
+ax.annotate(f'Avg: {felix_mean:.2f}, Volatility: {felix_volatility:.2f}', xy=(0, 1), xycoords='axes fraction', xytext=(5, -5), textcoords='offset points', ha='left', va='top', color='blue', fontsize=10)
+ax.annotate(f'Avg: {grauby_mean:.2f}, Volatility: {grauby_volatility:.2f}', xy=(1, 1), xycoords='axes fraction', xytext=(-5, -5), textcoords='offset points', ha='right', va='top', color='purple', fontsize=10)
+
+# Add cumulative sum annotations
+for i, (fc, gc) in enumerate(zip(felix_cumsum, grauby_cumsum)):
+    ax2.annotate(f'{fc}', xy=(x[i] - 0.2, fc), xytext=(0, 3), textcoords='offset points', ha='center', va='bottom', color='blue')
+    ax2.annotate(f'{gc}', xy=(x[i] + 0.2, gc), xytext=(0, 3), textcoords='offset points', ha='center', va='bottom', color='purple')
 
 fig.legend(loc='upper left', bbox_to_anchor=(0.1, 0.9))
 fig.tight_layout()
