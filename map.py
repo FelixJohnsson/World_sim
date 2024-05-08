@@ -42,8 +42,8 @@ def generate_map(height, width):
 
     def count_water_adjacent(y, x):
         water_count = 0
-        for i in range(-1, 2):
-            for j in range(-1, 2):
+        for i in range(-3, 4):
+            for j in range(-3, 4):
                 if 0 <= y + i < height and 0 <= x + j < width:
                     tile = game_map[y + i][x + j]
                     if tile.type == 'water':
@@ -65,14 +65,12 @@ def generate_map(height, width):
         
                     
     def generate_nutrients_for_tiles():
-        # Loop through all tiles and generate nutrients
-        # Ground that is near water gets more nutrients
         for y in range(height):
             for x in range(width):
                 tile = game_map[y][x]
                 if tile.type == 'ground':
                     water_count = count_water_adjacent(y, x)
-                    tile.nutrients += water_count * 0.5
+                    tile.nutrients += water_count * 0.2
                 elif tile.type == 'sand':
                     tile.nutrients = 0.1
 

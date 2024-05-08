@@ -239,14 +239,12 @@ class World (object):
                     nutrient_level = tile.nutrients
                     # Blend the color based on nutrient level
                     nutrient_ratio = nutrient_level / 3
-                    print(nutrient_ratio, nutrient_level)
+                    normalized_ratio = min(max(nutrient_ratio / 5, 0), 1)
                     blended_color = (
-                        max(0, int(SOIL_BROWN[0] * nutrient_ratio + FOREST_GREEN[0] * (1 - nutrient_ratio))),
-                        max(0, int(SOIL_BROWN[1] * nutrient_ratio + FOREST_GREEN[1] * (1 - nutrient_ratio))),
-                        max(0, int(SOIL_BROWN[2] * nutrient_ratio + FOREST_GREEN[2] * (1 - nutrient_ratio)))
+                        int(SOIL_BROWN[0] * normalized_ratio + FOREST_GREEN[0] * (1 - normalized_ratio)),
+                        int(SOIL_BROWN[1] * normalized_ratio + FOREST_GREEN[1] * (1 - normalized_ratio)),
+                        int(SOIL_BROWN[2] * normalized_ratio + FOREST_GREEN[2] * (1 - normalized_ratio))
                     )
-
-                    print(blended_color)
                     pygame.draw.rect(win, blended_color, (x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
                     
                     if len(tile.plants) > 0:
